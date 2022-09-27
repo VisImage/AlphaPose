@@ -28,6 +28,7 @@ class DetectionLoader():
             assert stream.isOpened(), 'Cannot capture source'
             self.path = input_source
             self.datalen = int(stream.get(cv2.CAP_PROP_FRAME_COUNT))
+            print("datalen = ",self.datalen)
             self.fourcc = int(stream.get(cv2.CAP_PROP_FOURCC))
             self.fps = stream.get(cv2.CAP_PROP_FPS)
             self.frameSize = (int(stream.get(cv2.CAP_PROP_FRAME_WIDTH)), int(stream.get(cv2.CAP_PROP_FRAME_HEIGHT)))
@@ -40,7 +41,7 @@ class DetectionLoader():
         if (self.datalen) % batchSize:
             leftover = 1
         self.num_batches = self.datalen // batchSize + leftover
-
+        print("datalen = ",self.datalen, "    num_batches=",self.num_batches,"    batchSize=",batchSize,"    leftover=",leftover)
         self._input_size = cfg.DATA_PRESET.IMAGE_SIZE
         self._output_size = cfg.DATA_PRESET.HEATMAP_SIZE
 
@@ -178,7 +179,7 @@ class DetectionLoader():
     def frame_preprocess(self):
         stream = cv2.VideoCapture(self.path)
         assert stream.isOpened(), 'Cannot capture source'
-
+        print("num_batches=",self.num_batches, "    batchSize=",self.batchSize)
         for i in range(self.num_batches):
             imgs = []
             orig_imgs = []
@@ -197,7 +198,7 @@ class DetectionLoader():
                             im_dim_list = torch.FloatTensor(im_dim_list).repeat(1, 2)
                         self.wait_and_put(self.image_queue, (imgs, orig_imgs, im_names, im_dim_list))
                     self.wait_and_put(self.image_queue, (None, None, None, None))
-                    print('===========================> This video get ' + str(k) + ' frames in total.')
+                    print('===========================> This video get ' + str(k) + ' frames in total.   i=' + str(i))
                     sys.stdout.flush()
                     stream.release()
                     return

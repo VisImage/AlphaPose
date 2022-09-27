@@ -42,6 +42,8 @@ class DataWriter():
         if opt.save_img:
             if not os.path.exists(opt.outputpath + '/vis'):
                 os.mkdir(opt.outputpath + '/vis')
+        if not os.path.exists(opt.outputpath + '/vis_orig'):
+                os.mkdir(opt.outputpath + '/vis_orig')
 
         if opt.pose_flow:
             from trackers.PoseFlow.poseflow_infer import PoseFlowWrapper
@@ -96,6 +98,7 @@ class DataWriter():
         while True:
             # ensure the queue is not empty and get item
             (boxes, scores, ids, hm_data, cropped_boxes, orig_img, im_name) = self.wait_and_get(self.result_queue)
+   
             if orig_img is None:
                 # if the thread indicator variable is set (img is None), stop the thread
                 if self.save_video:
@@ -178,6 +181,7 @@ class DataWriter():
                         from alphapose.utils.vis import vis_frame
                     img = vis_frame(orig_img, result, self.opt, self.vis_thres)
                     self.write_image(img, im_name, stream=stream if self.save_video else None)
+                    self.write_orig_image(orig_img, im_name, stream=stream if self.save_video else None)
 
     def write_image(self, img, im_name, stream=None):
         if self.opt.vis:
@@ -185,6 +189,15 @@ class DataWriter():
             cv2.waitKey(30)
         if self.opt.save_img:
             cv2.imwrite(os.path.join(self.opt.outputpath, 'vis', im_name), img)
+        if self.save_video:
+            stream.write(img)
+
+    def write_orig_image(self, img, im_name, stream=None):
+        if self.opt.vis:
+            cv2.imshow("AlphaPose Demo", img)
+            cv2.waitKey(30)
+        if self.opt.save_img:
+            cv2.imwrite(os.path.join(self.opt.outputpath, 'vis_orig', im_name), img)
         if self.save_video:
             stream.write(img)
 

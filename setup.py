@@ -217,7 +217,7 @@ if __name__ == '__main__':
         print("\nInstall third-party pycocotools for Windows...")
         cmd = 'python -m pip install git+https://github.com/philferriere/cocoapi.git#subdirectory=PythonAPI'
         os.system(cmd)
-    if not is_installed('cython_bbox'):
-        print("\nInstall `cython_bbox`...")
-        cmd = 'python -m pip install git+https://github.com/yanfengliu/cython_bbox.git'
-        os.system(cmd)
+    # if not is_installed('cython_bbox'):
+    #     print("\nInstall `cython_bbox`...")
+    #     cmd = 'python -m pip install git+https://github.com/yanfengliu/cython_bbox.git'
+    #     os.system(cmd)

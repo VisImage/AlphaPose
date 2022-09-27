@@ -118,3 +118,7 @@ examples/res*/
 data/
 exp/
 data
+
+#user data
+testvideos/
+testResults/

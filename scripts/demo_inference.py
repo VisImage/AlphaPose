@@ -57,13 +57,13 @@ parser.add_argument('--min_box_area', type=int, default=0,
                     help='min box area to filter out')
 parser.add_argument('--detbatch', type=int, default=5,
                     help='detection batch size PER GPU')
-parser.add_argument('--posebatch', type=int, default=64,
+parser.add_argument('--posebatch', type=int, default= 8, #64,
                     help='pose estimation maximum batch size PER GPU')
 parser.add_argument('--eval', dest='eval', default=False, action='store_true',
                     help='save the result json as coco format, using image index(int) instead of image name(str)')
 parser.add_argument('--gpus', type=str, dest='gpus', default="0",
                     help='choose which cuda device to use by index and input comma to use multi gpus, e.g. 0,1,2,3. (input -1 for cpu only)')
-parser.add_argument('--qsize', type=int, dest='qsize', default=1024,
+parser.add_argument('--qsize', type=int, dest='qsize', default=8, #1024,
                     help='the length of result buffer, where reducing it will lower requirement of cpu memory')
 parser.add_argument('--flip', default=False, action='store_true',
                     help='enable flip testing')
@@ -122,13 +122,13 @@ def check_input():
             return 'detfile', detfile
         else:
             raise IOError('Error: --detfile must refer to a detection json file, not directory.')
-
+    print( "label 1")
     # for images
     if len(args.inputpath) or len(args.inputlist) or len(args.inputimg):
         inputpath = args.inputpath
         inputlist = args.inputlist
         inputimg = args.inputimg
-
+        print( "label 2")
         if len(inputlist):
             im_names = open(inputlist, 'r').readlines()
         elif len(inputpath) and inputpath != '/':
@@ -138,7 +138,7 @@ def check_input():
         elif len(inputimg):
             args.inputpath = os.path.split(inputimg)[0]
             im_names = [os.path.split(inputimg)[1]]
-
+        print( "label 3")
         return 'image', im_names
 
     else:
@@ -195,7 +195,7 @@ if __name__ == "__main__":
         'pt': [],
         'pn': []
     }
-
+    print("===========================1====================")
     # Init data writer
     queueSize = 2 if mode == 'webcam' else args.qsize
     if args.save_video and mode != 'image':
@@ -208,7 +208,6 @@ if __name__ == "__main__":
         writer = DataWriter(cfg, args, save_video=True, video_save_opt=video_save_opt, queueSize=queueSize).start()
     else:
         writer = DataWriter(cfg, args, save_video=False, queueSize=queueSize).start()
-
     if mode == 'webcam':
         print('Starting webcam demo, press Ctrl + C to terminate...')
         sys.stdout.flush()
@@ -216,7 +215,7 @@ if __name__ == "__main__":
     else:
         data_len = det_loader.length
         im_names_desc = tqdm(range(data_len), dynamic_ncols=True)
-
+    print("=========================== 3 ====================")
     batchSize = args.posebatch
     if args.flip:
         batchSize = int(batchSize / 2)

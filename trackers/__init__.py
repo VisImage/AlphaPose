@@ -15,6 +15,5 @@ def track(tracker,args,orig_img,inps,boxes,hm,cropped_boxes,im_name,scores):
         new_hm.append(thm)
         new_ids.append(tid)
         new_scores.append(tscore)
-
     new_hm = torch.Tensor(new_hm).to(args.device)
     return new_boxes,new_scores,new_ids,new_hm,new_crop
