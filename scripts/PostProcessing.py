@@ -415,20 +415,20 @@ for path in input_results:
             print(f'aphapose result {result} is not ready!')
             continue
 
-        filtered_video_name = result +"/filtered.avi"
+        #filtered_video_name = result +"/filtered.avi"
         filtered_json_name = result +"/filtered.json"
-        filtered_image_dir = result+"/filtered_image_dir"
-        S1_remove_dark_image_dir = result+"/s1_image_dir"
-        S2_remove_small_image_dir = result+"/s2_image_dir"
+        #filtered_image_dir = result+"/filtered_image_dir"
+        #S1_remove_dark_image_dir = result+"/s1_image_dir"
+        #S2_remove_small_image_dir = result+"/s2_image_dir"
 
         if  os.path.isfile(filtered_video_name) == True and os.path.isfile(filtered_json_name) == True:
             print(f'{result} already processed!')
             continue
 
-        if os.path.isdir(filtered_image_dir) == False:
-            os.mkdir(filtered_image_dir)
-        if os.path.isdir(S1_remove_dark_image_dir) == False:
-            os.mkdir(S1_remove_dark_image_dir)
+        # if os.path.isdir(filtered_image_dir) == False:
+        #     os.mkdir(filtered_image_dir)
+        # if os.path.isdir(S1_remove_dark_image_dir) == False:
+        #     os.mkdir(S1_remove_dark_image_dir)
 
 
         #print(alphaPose_resuslt_json_name)
@@ -490,25 +490,25 @@ for path in input_results:
 
                 out_list_f, img_out = removeFlat(json_obj_frame_list, img)
 
-                out_list_s, img_out = removeSmall(out_list_f, img_out)
-                outF = f'{S1_remove_dark_image_dir}/img_{str(frame_no).zfill(padSize)}.jpg'
-                cv2.imwrite(outF, img_out)
+                # out_list_s, img_out = removeSmall(out_list_f, img_out)
+                # outF = f'{S1_remove_dark_image_dir}/img_{str(frame_no).zfill(padSize)}.jpg'
+                # cv2.imwrite(outF, img_out)
 
-                out_list_b, img_out= removeDarkClothing(out_list_s, img_out)
-                outF = f'{S2_remove_small_image_dir}/img_{str(frame_no).zfill(padSize)}.jpg'
-                cv2.imwrite(outF, img_out)
+                # out_list_b, img_out= removeDarkClothing(out_list_s, img_out)
+                # outF = f'{S2_remove_small_image_dir}/img_{str(frame_no).zfill(padSize)}.jpg'
+                # cv2.imwrite(outF, img_out)
 
-                json_obj_final_list = json_obj_final_list + out_list_b
-                outF = f'{filtered_image_dir}/img_{str(frame_no).zfill(padSize)}.jpg'
-                cv2.imwrite(outF, img_out)
+                # json_obj_final_list = json_obj_final_list + out_list_b
+                # outF = f'{filtered_image_dir}/img_{str(frame_no).zfill(padSize)}.jpg'
+                # cv2.imwrite(outF, img_out)
 
                 obj_prev = json_obj
                 json_obj_frame_list = []
                 json_obj_frame_list.append(obj_prev)
                 if frame_no % 500 == 0:
-                    print("i=", i, "  ", outF)
+                    print(" image frames processed: ", frame_no)
 
-        print(" length of lists:", len(json_obj_init_list), ", ", len(out_list_f), ", ", len(out_list_s),  len(out_list_b), ", ", len(json_obj_final_list))
+        # print(" length of lists:", len(json_obj_init_list), ", ", len(out_list_f), ", ", len(out_list_s),  len(out_list_b), ", ", len(json_obj_final_list))
         pose_dict = get_pose_dict(json_obj_final_list, result)
 
         # pose_dict_name = result +"/pose_dict.txt"
@@ -552,10 +552,10 @@ for path in input_results:
         json.dump(image_status, out_file, ensure_ascii = True)
         out_file.close()
 
-        print(f'filtered_image_dir={filtered_image_dir}')
-        filtered_video_name = result +"/filtered.avi"
-        generate_video(filtered_image_dir,filtered_video_name)
-        print(f'{filtered_video_name} is generated')
+        # print(f'filtered_image_dir={filtered_image_dir}')
+        # filtered_video_name = result +"/filtered.avi"
+        # generate_video(filtered_image_dir,filtered_video_name)
+        # print(f'{filtered_video_name} is generated')
         # S1_video_name = result +"/s1.avi"
         # generate_video(S1_remove_dark_image_dir,S1_video_name)
         # print(f'{S1_video_name} is generated')
