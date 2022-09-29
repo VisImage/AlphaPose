@@ -22,7 +22,8 @@ from alphapose.utils.transforms import flip, flip_heatmap
 from alphapose.utils.vis import getTime
 from alphapose.utils.webcam_detector import WebCamDetectionLoader
 from alphapose.utils.writer import DataWriter
-
+import warnings
+warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning) 
 """----------------------------- Demo options -----------------------------"""
 parser = argparse.ArgumentParser(description='AlphaPose Demo')
 parser.add_argument('--cfg', type=str, required=True,
@@ -287,12 +288,7 @@ if __name__ == "__main__":
                         ckpt_time, pose_time = getTime(ckpt_time)
                         runtime_profile['pt'].append(pose_time)
                     if args.pose_track:
-                        boxes,scores,ids,hm,cropped_boxes = track(tracker,args,orig_img,inps,boxes,hm,cropped_boxes,im_name,scores)
-                    hm = hm.cpu()
-                    writer.save(boxes, scores, ids, hm, cropped_boxes, orig_img, im_name)
-                    if args.profile:
-                        ckpt_time, post_time = getTime(ckpt_time)
-                        runtime_profile['pn'].append(post_time)
+                        boxes,scores,ids,hm,cropped_boxes = track(tracker,args,orig_img,inps,boxes,hm,cropped_boxes,args = parser.parse_args() runtime_profile['pn'].append(post_time)
 
                 if args.profile:
                     # TQDM
@@ -312,12 +308,7 @@ if __name__ == "__main__":
             pass
         except KeyboardInterrupt:
             print_finish_info()
-            # Thread won't be killed when press Ctrl+C
-            if args.sp:
-                det_loader.terminate()
-                while(writer.running()):
-                    time.sleep(1)
-                    print('===========================> Rendering remaining ' + str(writer.count()) + ' images in the queue...', end='\r')
+            # Thread won't be killed when pressfor path in input_results:
                 writer.stop()
             else:
                 # subprocesses are killed, manually clear queues

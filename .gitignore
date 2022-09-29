@@ -120,5 +120,5 @@ exp/
 data
 
 #user data
-testvideos/
-testResults/
+testVideos/
+testResults*/

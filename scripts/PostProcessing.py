@@ -354,15 +354,20 @@ def get_pose_dict(pose_list, result):
     pose_dict = defaultdict()
     for pose in pose_list:
         image_id = int(pose['image_id'].replace('.jpg',''))
-        pose_id = str(pose["idx"])     
+        pose_id = str(int(float(pose_id)))  # with --detector tracker  "idx": 9.0
+        #print( "pose_id 2 =", pose_id)
         if pose_id == '765'  and image_id == 7 :
             ii = 99 
         if pose_id == '1153'  and image_id == 2328:
             ii = 99
         if pose_id in pose_dict: 
             pose_list = pose_dict[pose_id]
-            if int(pose_id) in frame_dict[str(image_id - 1)+".jpg"]:
-                pose_list[len(pose_list)-1][1] = image_id
+            frame_id = str(image_id - 1)+".jpg"
+            if frame_id in frame_dict:
+                if int(pose_id) in frame_dict[str(image_id - 1)+".jpg"]:
+                    pose_list[len(pose_list)-1][1] = image_id
+                else:
+                    pose_list.append([image_id, image_id])
             else:
                 pose_list.append([image_id, image_id])
         else:
@@ -378,8 +383,6 @@ def get_pose_dict(pose_list, result):
 
     return pose_dict
 
-def new_func():
-    i = 9
     ###from IPython.lib.display import IFrame
 # To check and verify the result from pose_track alphaPose_resuslt.json
 # alphaPose_resuslt_image_path = '/gdrive/MyDrive/AlphaPose_result/20220304_133434000_iOS/vis/'
