@@ -148,9 +148,9 @@ def check_input():
 
 def print_finish_info():
     print('===========================> Finish Model Running.')
-    if (args.save_img or args.save_video) and not args.vis_fast:
-        print('===========================> Rendering remaining images in the queue...')
-        print('===========================> If this step takes too long, you can enable the --vis_fast flag to use fast rendering (real-time).')
+    # if (args.save_img or args.save_video) and not args.vis_fast:
+    #     print('===========================> Rendering remaining images in the queue...')
+    #     print('===========================> If this step takes too long, you can enable the --vis_fast flag to use fast rendering (real-time).')
 
 
 def loop():
@@ -288,7 +288,12 @@ if __name__ == "__main__":
                         ckpt_time, pose_time = getTime(ckpt_time)
                         runtime_profile['pt'].append(pose_time)
                     if args.pose_track:
-                        boxes,scores,ids,hm,cropped_boxes = track(tracker,args,orig_img,inps,boxes,hm,cropped_boxes,args = parser.parse_args() runtime_profile['pn'].append(post_time)
+                        boxes,scores,ids,hm,cropped_boxes = track(tracker,args,orig_img,inps,boxes,hm,cropped_boxes,im_name,scores)
+                    hm = hm.cpu()
+                    writer.save(boxes, scores, ids, hm, cropped_boxes, orig_img, im_name)
+                    if args.profile:
+                        ckpt_time, post_time = getTime(ckpt_time)
+                        runtime_profile['pn'].append(post_time)
 
                 if args.profile:
                     # TQDM
@@ -308,7 +313,12 @@ if __name__ == "__main__":
             pass
         except KeyboardInterrupt:
             print_finish_info()
-            # Thread won't be killed when pressfor path in input_results:
+            # Thread won't be killed when press Ctrl+C
+            if args.sp:
+                det_loader.terminate()
+                while(writer.running()):
+                    time.sleep(1)
+                    print('===========================> Rendering remaining ' + str(writer.count()) + ' images in the queue...', end='\r')
                 writer.stop()
             else:
                 # subprocesses are killed, manually clear queues

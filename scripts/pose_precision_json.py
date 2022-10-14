@@ -42,13 +42,8 @@ for path in input_results:
     out_strings.append(strings[0])
     #print("i=0    out_string=",out_strings)
     for i in range(1, len(strings)):
-    
-        # if i == 70:
-        #      print( "1=", i, "    out_string=", out_strings[50:60])
-        #      exit()
+
         word = strings[i].replace(' ','')    
-        #word = "98.734326"
-        #print("i=",i,"   word=",word, word.replace('.',''))    
 
         if word.replace('.','').isdigit() == True:
             ss = word.split('.')
@@ -106,59 +101,10 @@ for path in input_results:
                     else:
                         word_new =  word
 
-        # try:
-        #     value = float(word)
-        #     ss = word.split('.')
-        #     if len(ss) == 2:
-        #         if len(ss[0]) > 1:
-        #             out_string2 = ss[0] + "." + ss[1][:1] + ']'
-        #         else:
-        #             out_string2 = ss[0] + "." + ss[1][:3] + ']'
-        #     else:
-        #             out_string2 =  word
-        #     #out_string =  out_string + "," + word[:6]
-        #     # out_string =  out_string + "," + str(float(value_int/10))
-        #     #print( "value=",value,"    out_string2=",out_string2)
-        # except ValueError:     
-        #     if word[-1] == ']':           
-        #         try:
-        #             #print(word, "   ", word[-1], "   ", word[:-1])
-        #             value2 = float(word[:-1])
-        #             ss = word.split('.')
-        #             if len(ss) == 2:
-        #                 if len(ss[0]) > 1:
-        #                     out_string2 = ss[0] + "." + ss[1][:1] + ']'
-        #                 else:
-        #                     out_string2 = ss[0] + "." + ss[1][:3] + ']'
-        #             else:
-        #                 out_string2 =  word
-        #         except ValueError:
-        #             out_string2 =  word
-
-        #         #out_string = out_string + out_string2
-        #     else:
-        #         strings2 = word.split('[')
-        #         if len(strings2) > 1:
-        #             #print("strings2=",strings2)
-        #             try:
-        #                 value3 = float(strings2[1])
-        #                 ss = strings2[1].split('.')
-        #                 if len(ss) == 2:
-        #                     if len(ss[0]) > 1:
-        #                         out_string3 = ss[0] + "." + ss[1][:1]
-        #                     else:
-        #                         out_string3 = ss[0] + "." + ss[1][:3]
-        #                 out_string2 =  strings2[0] + '['+ out_string3
-        #             except ValueError:
-        #                 out_string2 =  word
-        #         else:
-        #             out_string2 =  word
 
         #out_string = out_string + "," + out_string2
         out_strings.append(","+word_new)
         
-        # if i ==10:
-        #     exit()
     out_string = ''.join(out_strings)
     with open(out_file,"w") as f:
         f.write(out_string)

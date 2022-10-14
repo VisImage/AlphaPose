@@ -6,5 +6,6 @@ cfg.loadmodel = "trackers/weights/osnet_ain_x1_0_msmt17_256x128_amsgrad_ep50_lr0
 cfg.frame_rate =  30
 cfg.track_buffer = 240 
 cfg.conf_thres = 0.5
+#cfg.conf_thres = 0.05
 cfg.nms_thres = 0.4
 cfg.iou_thres = 0.5

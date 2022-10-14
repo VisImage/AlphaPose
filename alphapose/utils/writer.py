@@ -48,12 +48,15 @@ class DataWriter():
         if opt.pose_flow:
             from trackers.PoseFlow.poseflow_infer import PoseFlowWrapper
             self.pose_flow_wrapper = PoseFlowWrapper(save_path=os.path.join(opt.outputpath, 'poseflow'))
-
+        
         if self.opt.save_img or self.save_video or self.opt.vis:
             loss_type = self.cfg.DATA_PRESET.get('LOSS_TYPE', 'MSELoss')
+            #print(" ====================== loss_type=",loss_type)
             num_joints = self.cfg.DATA_PRESET.NUM_JOINTS
             if loss_type == 'MSELoss':
-                self.vis_thres = [0.4] * num_joints
+                #self.vis_thres = [0.4] * num_joints
+                self.vis_thres = [0.2] * num_joints
+                #print(" ====================== vis_thres=",self.vis_thres)
             elif 'JointRegression' in loss_type:
                 self.vis_thres = [0.05] * num_joints
             elif loss_type == 'Combined':
@@ -187,8 +190,8 @@ class DataWriter():
         if self.opt.vis:
             cv2.imshow("AlphaPose Demo", img)
             cv2.waitKey(30)
-        if self.opt.save_img:
-            cv2.imwrite(os.path.join(self.opt.outputpath, 'vis', im_name), img)
+        # if self.opt.save_img:  #not save image with pose keep the orig to make sure the original image used are kept
+        #     cv2.imwrite(os.path.join(self.opt.outputpath, 'vis', im_name), img)
         if self.save_video:
             stream.write(img)
 
