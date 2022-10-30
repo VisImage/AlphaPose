@@ -11,6 +11,10 @@ import numpy as np
 import sys
 from collections import defaultdict
 import copy
+import collections
+
+WHITE = (255, 255, 255)
+DEFAULT_FONT = cv2.FONT_HERSHEY_SIMPLEX
 
 # json_obj_list: the personal json object in one frame, input
 # img: the image of the frame, input and output
@@ -43,8 +47,32 @@ def drawPose(json_obj_list, img):
 
         cv2.polylines(img_out,[cPts.astype(int)],True,(255,0,0), 2)
 
+def drawPoseBBox(pose_list, img):
+    img_out = img
+
+    for pose in pose_list:
+        bbox = pose['box']
+        bbox = [bbox[0], bbox[0]+bbox[2], bbox[1], bbox[1]+bbox[3]]#xmin,xmax,ymin,ymax
+
+        cv2.rectangle(img, (int(bbox[0]), int(bbox[2])), (int(bbox[1]), int(bbox[3])), WHITE, 1)
+            #if opt.tracking:
+        cv2.putText(img, str(pose['idx']), (int(bbox[0]), int((bbox[2] + 26))), cv2.FONT_HERSHEY_SIMPLEX,1, (255,255,255), 1)
+
     return img_out
 
+# change idx to string of numbers
+def normaliseIdx(pose_list):
+    list_out = []
+    for pose in pose_list:
+        idx = pose['idx']
+        if isinstance(idx, str):
+            idx_out = idx
+        else:
+            idx_out = str(int(idx))
+        pose_out = pose
+        pose_out['idx'] = [idx_out]
+        list_out.append(pose_out)
+    return list_out
 # Video Generating function
 def generate_video(image_folder,video_name):
     #image_folder = '.' # make sure to use your folder
@@ -139,13 +167,13 @@ def get_pose_dict_2(pose_list):
     pose_dict = defaultdict()
     for pose in pose_list:
         image_id = int(pose['image_id'].replace('.jpg',''))
-        pose_id = pose['idx']
-        pose_id = str(int(float(pose_id)))  # with --detector tracker  "idx": 9.0
-        if pose_id in pose_dict:
-            pose_list = pose_dict[pose_id]
-            pose_dict[pose_id].append(image_id)
-        else:
-            pose_dict[pose_id] = [image_id]
+        for pose_id in pose['idx']:
+            #pose_id = pose['idx']
+            #pose_id = str(int(float(pose_id)))  # with --detector tracker  "idx": 9.0
+            if pose_id in pose_dict:
+                pose_dict[pose_id][1].append(image_id)
+            else:
+                pose_dict[pose_id] = [pose['idx'],[image_id]]
 
         # frame_dict_name = result +"/frame_dict.txt"
         # with open(frame_dict_name, 'w') as f:
@@ -156,6 +184,35 @@ def get_pose_dict_2(pose_list):
         #     print(pose_dict, file=f)
 
     return pose_dict
+
+#generate pose dictionary
+def clean_merged_pose(pose_dict):
+
+    pose_dict_temp1 = pose_dict.copy()
+    merged_list_final = []
+    merged_dict = defaultdict()
+    while len(pose_dict_temp1) > 0:
+        # take the first element in the dictionary
+        # and compare 
+        key1  = list(pose_dict_temp1.keys())[0]
+        item1 = pose_dict_temp1[key1]
+        merged_list_id = item1[0] 
+        merged_list_imageId = item1[1]
+        pose_dict_temp1.pop(key1)
+        pose_dict_temp = pose_dict_temp1.copy()
+        for pose_id in pose_dict_temp1:
+            item = pose_dict_temp1[pose_id]
+            common_list = set(item[0]).intersection(item1[0])
+            if len (common_list) > 0:
+                pose_dict_temp.pop(pose_id)
+                merged_list_id = merged_list_id + item[0]
+                merged_list_imageId = merged_list_imageId + item[1]
+        merged_list_id = list(dict.fromkeys(merged_list_id))
+        merged_list_final.append([merged_list_id, merged_list_imageId])
+        #merged_dict[merged_list_id] = merged_list_imageId
+        pose_dict_temp1 = pose_dict_temp
+
+    return merged_list_final
 
 def get_overlap_dict(frame_dict):
     overlap_dict = defaultdict()
@@ -456,7 +513,9 @@ def merge_overlap_pose(pose_list, overlap_list):
             else:
                 pose_merge = pose_1
             pose_merge['keypoints'] = keypoints_merge
-            pose_merge['box'] = _get_bbox(keypoints_merge)
+            pose_merge['score'] = max(pose_0['score'],pose_1['score'])           
+            pose_merge['box'] = _get_bbox(keypoints_merge)   
+            pose_merge['idx']  = pose_0['idx'] + pose_1['idx']
             pose_out.append(pose_merge)    
         else:
             overlap_out.append(overlap)
@@ -621,9 +680,9 @@ def kneeDirectionCheck(Knee,Hip,Ankle):
     if Ankle[1] != Hip[1]:
         x = int((Ankle[0]*(y-Hip[1]) - Hip[0]*(y-Ankle[1]))/(Ankle[1] -Hip[1]))
         if Knee[0] > x:
-            return 'toLeft'
-        elif Knee[0] < x:
             return 'toRight'
+        elif Knee[0] < x:
+            return 'toLeft'
         else:
             return "unknow"
     else:
@@ -732,10 +791,10 @@ def _get_center(pose):
 # "right_wrist", "left_hip", "right_hip", "left_knee", "right_knee", 
 # "left_ankle", "right_ankle" ]
 
-def getFencerPose(pose_list, img):
+def getFencerPose(pose_list):
 
     if len(pose_list) < 2:
-        return [],[], img
+        return [],[]
     dict_bodyLength = defaultdict()
     for pose in pose_list:  
         keyP = pose['keypoints']
@@ -753,7 +812,7 @@ def getFencerPose(pose_list, img):
             body_length = body_length_L
         else:
             body_length = body_length_R
-            
+
         dict_bodyLength[int(body_length)] = pose
     
     sorted_bodyLength_list = sorted(dict_bodyLength, reverse = True)
@@ -789,7 +848,7 @@ def getFencerPose(pose_list, img):
                 pose_fencer_L = pose
             # elif _get_center(pose)[0] > _get_center(pose_fencer_L)[0]: # fencer_L.x is smaller
             #     pose_fencer_R = pose
-    return pose_fencer_L, pose_fencer_R, img_out
+    return pose_fencer_L, pose_fencer_R
 
 def get2fencingStatus(json_obj_list, img):
     img_out = img
@@ -859,39 +918,176 @@ def get2fencingStatus(json_obj_list, img):
     img = cv2.putText(img, "UUUUUU", (img.shape[1] - 100,50), cv2.FONT_HERSHEY_SIMPLEX, 2, (128,128,128), 4, cv2.LINE_AA)
     return img, -1
 
+def get_fencer_list_in_all_frames(frame_dict,fencer_list):
+    fencer_list_all_frames = []
+    for key in frame_dict:
+        fencer_list_in_a_frame = []
+        for pose in frame_dict[key]:
+            if pose['idx'] in fencer_list:
+                fencer_list_in_a_frame.append(pose['idx'])
+        fencer_list_all_frames.append(fencer_list_in_a_frame)
+    return fencer_list_all_frames
 
-# def search_overLap_pose(pose_dict,frame_dict,idx1, idx2):
-#     frame_dict_len = len(frame_dict)
-#     _result = []
-#     for i in range(frame_dict_len):
-#         frame_pose = frame_dict[i]
-#         no_pose_in_frame = len(frame_pose)
+# remove_overlap_fencers: clean poses, which produces false fencer 
+# 1) mark all the poses as fencer, as long as this pose is detected as fencer once
+# 2) remove pose from fencer, which has been both left and right fencer n different frame
+# 3) check for duplicated left or right fencers in a single frame, using frame_dict
+# 4) remove pose and duplication:
+#   i) remove short sequency.  short fencer sequence < long_fencer_sequency /10
+#   ii) remove sequency with small bbox if min1 > max2: remove sequency2
+# 5) remove the sequencies from frame_dict and pose_dict and json_obj_final_list
+#   
 
-# def removeOverlap(frame_dict,idx1, idx2):
-#     frame_dict_len = len(frame_dict)
-#     _result = []
-#     for i in range(frame_dict_len):
-#         frame_pose = frame_dict[i]
-#         no_pose_in_frame = len(frame_pose)
-#         for j in range(no_pose_in_frame):
-#             Jbox = frame_pose[j]['box']
-#             for k in range(j+1, no_pose_in_frame):
-#                 over_lap_rate = overLap_rate(Jbox, frame_pose[k]['box'])
-#                 _result.append([frame_pose[0],frame_pose[j]["idx"],frame_pose[k]["idx"], over_lap_rate])
+def remove_overlap_fencers (frame_fencer_list,frame_dict):
+    # 1) mark all the poses as fencer, as long as this pose is detected as fencer once
+    fencer_left_list = []
+    fencer_right_list = []
+    for fencer_l in frame_fencer_list[0]:
+        if fencer_l not in fencer_left_list:
+            if fencer_l != "-1":
+                fencer_left_list.append(fencer_l)
 
-#     return _result
-#     return _result
+    for fencer_r in frame_fencer_list[1]:          
+        if fencer_r not in fencer_right_list:
+            if fencer_r != "-1":
+                fencer_right_list.append(fencer_r)
 
+    #remove pose as the intersect in both left and right fencer lists
+    intersect = set(fencer_right_list).intersection(set(fencer_left_list))
+    while len(intersect) > 0:
+        pose_0 = list(intersect)[0]
+        no_a_left = 0
+        no_a_right = 0
+        for fencer_l in frame_fencer_list[0]:
+            if fencer_l == pose_0:
+                no_a_left = no_a_left + 1
+        for fencer_r in frame_fencer_list[1]:
+            if fencer_r == pose_0:
+                no_a_right = no_a_right + 1
 
+        if no_a_left > no_a_right:
+            fencer_right_list.remove(pose_0)
+            for i in range(len(frame_fencer_list)):
+                if frame_fencer_list[1][i] == pose_0:
+                    frame_fencer_list[1][i] = '-1'
+        else:
+            fencer_left_list.remove(pose_0)
+            for i in range(len(frame_fencer_list[0])):
+                if frame_fencer_list[0][i] == pose_0:
+                    frame_fencer_list[0][i] = '-1'
 
+        intersect = set(fencer_right_list).intersection(set(fencer_left_list))
 
-        #     if idx1 == idx:
-        #         idx1_exist = True
-        #     if idx2 == idx:
-        #         idx2_exist = True
-        # if idx1_exist and idx2_exist:
-        #     print ("i = ", i, " =============  frame_id:", frame_pose[0]["image_id"] )
-        #     exit()
+    # fencer_left_list_all_frames = []
+    # fencer_right_list_all_frames = [] 
+
+    # frameNo = len(frame_dict)
+
+    # for key in frame_dict:
+    # #for id in range(frameNo):
+    #     left_fencer_list_in_a_frame = []
+    #     right_fencer_list_in_a_frame = []fencer_left_list
+    #     for pose in frame_dict[key]:
+    #         if pose['idx'] in fencer_left_list:
+    #             left_fencer_list_in_a_frame.append(pose['idx'])
+    #         if pose['idx'] in fencer_right_list:
+    #             right_fencer_list_in_a_frame.append(pose['idx'])
+    #     fencer_left_list_all_frames.append(left_fencer_list_in_a_frame)
+    #     fencer_right_list_all_frames.append(right_fencer_list_in_a_frame)
+
+    fencer_left_list_all_frames = get_fencer_list_in_all_frames(frame_dict,fencer_left_list)
+    fencer_right_list_all_frames = get_fencer_list_in_all_frames(frame_dict,fencer_right_list)
+ 
+    frameNo = len(frame_dict)
+
+    for id in range(frameNo):
+        #process left fencers
+        fencer_in_frame = fencer_left_list_all_frames[id]
+        size = len(fencer_in_frame) 
+        if size > 1:
+            no_as = [0]* size
+            idx_max = 0
+            value_max = -1
+            for i in range(size):
+                value = collections.Counter(frame_fencer_list[0])[fencer_in_frame[i]]
+                no_as[i] = value
+                if value > value_max:
+                    value_max = value
+                    idx_max = fencer_in_frame[i]
+
+            for i in range(size):
+                pose_idx = fencer_in_frame[i]
+                if pose_idx != idx_max:
+                    fencer_left_list.remove(pose_idx)
+                    for i in range(len(frame_fencer_list[0])):
+                        if frame_fencer_list[0][i] == pose_idx:
+                            frame_fencer_list[0][i] = '-1'
+   
+            fencer_left_list_all_frames = get_fencer_list_in_all_frames(frame_dict,fencer_left_list)
+
+        #process right fencers
+        fencer_in_frame = fencer_right_list_all_frames[id]
+        size = len(fencer_in_frame) 
+        if size > 1:
+            no_as = [0]* size
+            idx_max = 0
+            value_max = -1
+            for i in range(size):
+                value = collections.Counter(frame_fencer_list[1])[fencer_in_frame[i]]
+                no_as[i] = value
+                if value > value_max:
+                    value_max = value
+                    idx_max = fencer_in_frame[i]
+
+            for i in range(size):
+                pose_idx = fencer_in_frame[i]
+                if pose_idx != idx_max:
+                    fencer_right_list.remove(pose_idx)
+                    for i in range(len(frame_fencer_list[1])):
+                        if frame_fencer_list[1][i] == pose_idx:
+                            frame_fencer_list[1][i] = '-1'
+ 
+            fencer_right_list_all_frames = get_fencer_list_in_all_frames(frame_dict,fencer_right_list)
+
+    return frame_fencer_list
+
+def getIdx(idx_list,pose_list):
+    # return the idx found in the existing pose_list
+    for pose in pose_list:
+        idx = pose['idx']
+        if idx in idx_list:
+            return idx
+    # return the min id in the list otherwise
+    result_idx = 10000
+    for idx in idx_list:
+        if int(idx) < result_idx:
+            result_idx = int(idx)
+    return str(result_idx)
+
+# merge pose, re-idx pose which is the same pose but has different idx in 
+# different frames
+
+def merge_poses(json_obj_final_list): 
+    
+    pose_list = []
+    pose_dict = get_pose_dict_2(json_obj_final_list)
+
+    merged_pose_dict_list = clean_merged_pose(pose_dict)
+
+    for pose in json_obj_final_list:
+        for item in merged_pose_dict_list:
+            idx_list = item[0]
+            if pose['idx'][0] == '266':
+                i = 0
+            if pose['idx'][0] in idx_list:
+                idx = getIdx(idx_list,pose_list)
+                pose['idx'] = idx
+                pose_list.append(pose)
+                break
+    pose_dict2 = get_pose_dict(pose_list)
+
+    return pose_list
+
 alphaPose_resuslt_path = '/home/yin/gitSources/AlphaPose/testResults/'
 
 input_results = os.listdir(alphaPose_resuslt_path)
@@ -965,6 +1161,7 @@ for path in input_results:
         # image_id, 1st frame, frame No.
 
         # pose_dict1 = get_pose_dict(json_obj_init_list)
+        json_obj_init_list = normaliseIdx(json_obj_init_list)
 
         final_frame_list = []
         json_obj_dark_list = []
@@ -975,6 +1172,9 @@ for path in input_results:
         json_obj_frame_list.append(json_obj)
         obj_prev = json_obj
         final_overlap_list = []
+        frame_fencer_list = [[],[]]
+        fencer_pose_list= []
+        fencer_overlap_list = []
         frame_dict = defaultdict()
         overlap_dict = defaultdict()
         # process pose within a frame, and another frame
@@ -982,7 +1182,7 @@ for path in input_results:
         # groupped by pose idx; 2) a frame_dict, a dictionary containing for the poses groupped by frame idx; and 
         # 3) a overlap_list, a list containing pose (box) overlap information. overlap_list is stored inside frame_dict
         # frame_dict = {frame_idx: [pose_list, overlap_list]}
-        for i in range(1, len(json_obj_init_list)):
+        for i in range(1, len(json_obj_init_list)): 
             json_obj = json_obj_init_list[i]
             if json_obj['image_id'] == obj_prev['image_id'] and i != len(json_obj_init_list) - 1:
                 json_obj_frame_list.append(json_obj)
@@ -991,7 +1191,7 @@ for path in input_results:
                 #     print(f'i={i}, img_id={frame_no}, {len(json_obj_frame_list)}')
 
                 #process the josn_obj of the (prev) frame
-                fileName = obj_prev['image_id'] #.replace(".jpg","")+"_orig.jpg"
+                fileName = obj_prev['image_id'] #.replaceremove_overlap_fencers(".jpg","")+"_orig.jpg"
                 frame_no = int(fileName.replace(".jpg",""))
                 if frame_no == 90:
                     t = 0
@@ -1009,6 +1209,7 @@ for path in input_results:
                 out_list_b= removeDarkClothing(out_list_s, img)
 
                 overlap_list = get_Overlap_list(out_list_b)
+                # 2 poses (with different idx) are overlapped in a frame
 
                 if len(overlap_list) > 0:
                     out_list_b, overlap_list = remove_overlap_by_size(out_list_b, overlap_list,3)
@@ -1026,20 +1227,102 @@ for path in input_results:
                 # outF = f'{fencer_image_dir}/img_{str(frame_no).zfill(padSize)}.jpg'
                 # cv2.imwrite(outF, img_out)
 
-                frame_list = []
-                for pose in out_list_b:
-                 #   frame_list.append(int(pose['idx']))
-                    frame_list.append(pose)
+                # # frame_list = []
+                # # for pose in out_list_b:                # # frame_list = []
+                # # for pose in out_list_b:
+                # #  #   frame_list.append(int(pose['idx']))
+                # #     frame_list.append(pose)
 
-                frame_id = obj_prev["image_id"]
-                frame_dict[frame_no] = frame_list
+
+                    
+                # # frame_id = obj_prev["image_id"]
+                # # frame_dict[frame_no] = frame_list
+
+                # # Pose_L, Pose_R = getFencerPose(frame_list)
+                # # #Pose_L, Pose_R, img = getFencerPose(frame_list, img)
+
+                # # left_idx = -1
+                # # right_idx = -1
+                # # if Pose_L != []:
+                # #     left_idx = Pose_L['idx']
+                # # if Pose_R != []:
+                # #     right_idx = Pose_R['idx']
+
+                # # frame_fencer_list.append([left_idx,right_idx])
+                # #  #   frame_list.append(int(pose['idx']))
+                # #     frame_list.append(pose)
+
+
+                    
+                # # frame_id = obj_prev["image_id"]
+                # # frame_dict[frame_no] = frame_list
+
+                # # Pose_L, Pose_R = getFencerPose(frame_list)
+                # # #Pose_L, Pose_R, img = getFencerPose(frame_list, img)
+
+                # # left_idx = -1
+                # # right_idx = -1
+                # # if Pose_L != []:
+                # #     left_idx = Pose_L['idx']
+                # # if Pose_R != []:
+                # #     right_idx = Pose_R['idx']
+
+                # # frame_fencer_list.append([left_idx,right_idx])
 
                 obj_prev = json_obj
                 json_obj_frame_list = []
                 json_obj_frame_list.append(obj_prev)
                 if frame_no % 500 == 0:
                     print(" image frames processed: ", frame_no)
+        #end of loop
 
+        filtered_pose_list = merge_poses(json_obj_final_list) #same person with diff idx in diff frames
+
+        frame_pose_list = []
+        list_size = len(filtered_pose_list)
+        json_obj = filtered_pose_list[0]
+        frame_pose_list.append(json_obj)
+        obj_prev = json_obj
+        for i in range(1, list_size): 
+            json_obj = filtered_pose_list[i]
+            if json_obj['image_id'] == obj_prev['image_id'] and i != list_size - 1:
+                frame_pose_list.append(json_obj)
+            else:
+                fileName = obj_prev['image_id'] #.replace(".jpg","")+"_orig.jpg"
+                frame_no = int(fileName.replace(".jpg",""))
+                frame_list = []
+                for pose in frame_pose_list:
+                    frame_list.append(pose)
+   
+                frame_id = obj_prev["image_id"]
+                frame_dict[frame_no] = frame_list
+
+                Pose_L, Pose_R = getFencerPose(frame_list)
+                #Pose_L, Pose_R, img = getFencerPose(frame_list, img)
+                    
+                left_idx = '-1'
+                right_idx = '-1'
+                if Pose_L != [] and Pose_R != []:
+                    Box_L = Pose_L['box']
+                    Box_R = Pose_R['box']
+                    if Box_L[0] < Box_R[0] and Box_L[0] +  Box_L[2] < Box_R[0] + Box_R[2]:
+                        left_idx = Pose_L['idx']
+                        right_idx = Pose_R['idx']
+
+                frame_fencer_list[0].append(left_idx)
+                frame_fencer_list[1].append(right_idx)
+
+                obj_prev = json_obj
+                frame_pose_list = []
+                frame_pose_list.append(obj_prev)
+                if frame_no % 500 == 0:
+                    print(" image frames processed: ", frame_no)
+        #end of loop
+
+
+        frame_fencer_list = remove_overlap_fencers(frame_fencer_list,frame_dict)
+
+        # draw fencer label
         for key, pose_list in frame_dict.items():
             #frame_pose = frame_dict[frame]
             fileName = str(key)+".jpg" #obj_prev['image_id'] #.replace(".jpg","")+"_orig.jpg"
@@ -1047,16 +1330,24 @@ for path in input_results:
             cv2.putText(img, str(key), (50,50), cv2.FONT_HERSHEY_SIMPLEX,
                         1, (0,0,255), 2, cv2.LINE_AA)
 
-            Pose_L, Pose_R, img = getFencerPose(pose_list, img)
+            drawPoseBBox(pose_list, img)
 
-            if Pose_L != [] and Pose_R != []:
+            #Pose_L, Pose_R = getFencerPose(pose_list)
+            Pose_idx_L = frame_fencer_list[0][key]
+            Pose_idx_R = frame_fencer_list[1][key]
 
-                box = Pose_L['box']
-                p = (int(box[0]), int(box[1] + box[3]))
-                cv2.putText(img, "fencer_L", p, cv2.FONT_HERSHEY_SIMPLEX,1, (0,0,255), 2, cv2.LINE_AA)
-                box = Pose_R['box']
-                p = (int(box[0]), int(box[1] + box[3]))
-                cv2.putText(img, "fencer_R", p, cv2.FONT_HERSHEY_SIMPLEX,1, (0,0,255), 2, cv2.LINE_AA)
+            if Pose_idx_L != '-1':
+                for pose in pose_list:
+                    if pose['idx'] == Pose_idx_L:
+                        box = pose['box']
+                        p = (int(box[0]), int(box[1] + box[3]))
+                        cv2.putText(img, "L", p, cv2.FONT_HERSHEY_SIMPLEX,1, (0,0,255), 2, cv2.LINE_AA)
+            if Pose_idx_R != '-1':
+                for pose in pose_list:
+                    if pose['idx'] == Pose_idx_R:
+                        box = pose['box']
+                        p = (int(box[0]), int(box[1] + box[3]))
+                        cv2.putText(img, "R", p, cv2.FONT_HERSHEY_SIMPLEX,1, (0,0,255), 2, cv2.LINE_AA)
 
             # frame_no = key
             # if frame_no == 90:
