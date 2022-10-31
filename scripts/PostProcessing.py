@@ -938,19 +938,21 @@ def get_fencer_list_in_all_frames(frame_dict,fencer_list):
 # 5) remove the sequencies from frame_dict and pose_dict and json_obj_final_list
 #   
 
-def remove_overlap_fencers (frame_fencer_list,frame_dict):
+def remove_overlap_fencers (frame_fencer_dict,frame_dict):
     # 1) mark all the poses as fencer, as long as this pose is detected as fencer once
     fencer_left_list = []
-    fencer_right_list = []
-    for fencer_l in frame_fencer_list[0]:
+    for key, fencer_l in frame_fencer_dict[0].items():
         if fencer_l not in fencer_left_list:
-            if fencer_l != "-1":
-                fencer_left_list.append(fencer_l)
+            fencer_left_list.append(fencer_l)
+    if '-1' in fencer_left_list:
+        fencer_left_list.remove('-1')
 
-    for fencer_r in frame_fencer_list[1]:          
+    fencer_right_list = []
+    for key, fencer_r in frame_fencer_dict[1].items():
         if fencer_r not in fencer_right_list:
-            if fencer_r != "-1":
-                fencer_right_list.append(fencer_r)
+            fencer_right_list.append(fencer_r)
+    if '-1' in fencer_right_list:
+        fencer_right_list.remove('-1')
 
     #remove pose as the intersect in both left and right fencer lists
     intersect = set(fencer_right_list).intersection(set(fencer_left_list))
@@ -958,42 +960,25 @@ def remove_overlap_fencers (frame_fencer_list,frame_dict):
         pose_0 = list(intersect)[0]
         no_a_left = 0
         no_a_right = 0
-        for fencer_l in frame_fencer_list[0]:
+        for key, fencer_l in frame_fencer_dict[0].items():
             if fencer_l == pose_0:
                 no_a_left = no_a_left + 1
-        for fencer_r in frame_fencer_list[1]:
+        for key, fencer_r in frame_fencer_dict[1].items():
             if fencer_r == pose_0:
                 no_a_right = no_a_right + 1
 
         if no_a_left > no_a_right:
             fencer_right_list.remove(pose_0)
-            for i in range(len(frame_fencer_list)):
-                if frame_fencer_list[1][i] == pose_0:
-                    frame_fencer_list[1][i] = '-1'
+            for key, value in frame_fencer_dict[1].items():
+                if value == pose_0:
+                    frame_fencer_dict[1][key] = '-1'
         else:
             fencer_left_list.remove(pose_0)
-            for i in range(len(frame_fencer_list[0])):
-                if frame_fencer_list[0][i] == pose_0:
-                    frame_fencer_list[0][i] = '-1'
+            for key, value in frame_fencer_dict[0].items():
+                if value == pose_0:
+                    frame_fencer_dict[0][key] = '-1'
 
         intersect = set(fencer_right_list).intersection(set(fencer_left_list))
-
-    # fencer_left_list_all_frames = []
-    # fencer_right_list_all_frames = [] 
-
-    # frameNo = len(frame_dict)
-
-    # for key in frame_dict:
-    # #for id in range(frameNo):
-    #     left_fencer_list_in_a_frame = []
-    #     right_fencer_list_in_a_frame = []fencer_left_list
-    #     for pose in frame_dict[key]:
-    #         if pose['idx'] in fencer_left_list:
-    #             left_fencer_list_in_a_frame.append(pose['idx'])
-    #         if pose['idx'] in fencer_right_list:
-    #             right_fencer_list_in_a_frame.append(pose['idx'])
-    #     fencer_left_list_all_frames.append(left_fencer_list_in_a_frame)
-    #     fencer_right_list_all_frames.append(right_fencer_list_in_a_frame)
 
     fencer_left_list_all_frames = get_fencer_list_in_all_frames(frame_dict,fencer_left_list)
     fencer_right_list_all_frames = get_fencer_list_in_all_frames(frame_dict,fencer_right_list)
@@ -1005,12 +990,12 @@ def remove_overlap_fencers (frame_fencer_list,frame_dict):
         fencer_in_frame = fencer_left_list_all_frames[id]
         size = len(fencer_in_frame) 
         if size > 1:
-            no_as = [0]* size
+            #no_as = [0]* size
             idx_max = 0
             value_max = -1
             for i in range(size):
-                value = collections.Counter(frame_fencer_list[0])[fencer_in_frame[i]]
-                no_as[i] = value
+                value = collections.Counter(frame_fencer_dict[0])[fencer_in_frame[i]]
+                #no_as[i] = value
                 if value > value_max:
                     value_max = value
                     idx_max = fencer_in_frame[i]
@@ -1019,9 +1004,9 @@ def remove_overlap_fencers (frame_fencer_list,frame_dict):
                 pose_idx = fencer_in_frame[i]
                 if pose_idx != idx_max:
                     fencer_left_list.remove(pose_idx)
-                    for i in range(len(frame_fencer_list[0])):
-                        if frame_fencer_list[0][i] == pose_idx:
-                            frame_fencer_list[0][i] = '-1'
+                    for i, value in frame_fencer_dict[0].items():
+                        if value == pose_idx:
+                            frame_fencer_dict[0][i] = '-1'
    
             fencer_left_list_all_frames = get_fencer_list_in_all_frames(frame_dict,fencer_left_list)
 
@@ -1029,12 +1014,10 @@ def remove_overlap_fencers (frame_fencer_list,frame_dict):
         fencer_in_frame = fencer_right_list_all_frames[id]
         size = len(fencer_in_frame) 
         if size > 1:
-            no_as = [0]* size
             idx_max = 0
             value_max = -1
             for i in range(size):
-                value = collections.Counter(frame_fencer_list[1])[fencer_in_frame[i]]
-                no_as[i] = value
+                value = collections.Counter(frame_fencer_dict[1])[fencer_in_frame[i]]
                 if value > value_max:
                     value_max = value
                     idx_max = fencer_in_frame[i]
@@ -1043,13 +1026,13 @@ def remove_overlap_fencers (frame_fencer_list,frame_dict):
                 pose_idx = fencer_in_frame[i]
                 if pose_idx != idx_max:
                     fencer_right_list.remove(pose_idx)
-                    for i in range(len(frame_fencer_list[1])):
-                        if frame_fencer_list[1][i] == pose_idx:
-                            frame_fencer_list[1][i] = '-1'
+                    for i, value in frame_fencer_dict[1].items():
+                        if value == pose_idx:
+                            frame_fencer_dict[1][i] = '-1'
  
             fencer_right_list_all_frames = get_fencer_list_in_all_frames(frame_dict,fencer_right_list)
 
-    return frame_fencer_list
+    return frame_fencer_dict
 
 def getIdx(idx_list,pose_list):
     # return the idx found in the existing pose_list
@@ -1172,7 +1155,8 @@ for path in input_results:
         json_obj_frame_list.append(json_obj)
         obj_prev = json_obj
         final_overlap_list = []
-        frame_fencer_list = [[],[]]
+        #frame_fencer_list = [[],[]]
+        frame_fencer_dict = [defaultdict(), defaultdict()]
         fencer_pose_list= []
         fencer_overlap_list = []
         frame_dict = defaultdict()
@@ -1290,6 +1274,8 @@ for path in input_results:
             else:
                 fileName = obj_prev['image_id'] #.replace(".jpg","")+"_orig.jpg"
                 frame_no = int(fileName.replace(".jpg",""))
+                # if frame_no == 364:
+                #     ttt = 0
                 frame_list = []
                 for pose in frame_pose_list:
                     frame_list.append(pose)
@@ -1309,8 +1295,8 @@ for path in input_results:
                         left_idx = Pose_L['idx']
                         right_idx = Pose_R['idx']
 
-                frame_fencer_list[0].append(left_idx)
-                frame_fencer_list[1].append(right_idx)
+                frame_fencer_dict[0][frame_no] = left_idx
+                frame_fencer_dict[1][frame_no] = right_idx
 
                 obj_prev = json_obj
                 frame_pose_list = []
@@ -1319,11 +1305,13 @@ for path in input_results:
                     print(" image frames processed: ", frame_no)
         #end of loop
 
-
-        frame_fencer_list = remove_overlap_fencers(frame_fencer_list,frame_dict)
+#        print(frame_dict[365])
+        frame_fencer_dict = remove_overlap_fencers(frame_fencer_dict,frame_dict)
 
         # draw fencer label
         for key, pose_list in frame_dict.items():
+        #for key in range(len(frame_dict)):
+        #    pose_list = frame_dict[key] 
             #frame_pose = frame_dict[frame]
             fileName = str(key)+".jpg" #obj_prev['image_id'] #.replace(".jpg","")+"_orig.jpg"
             img = cv2.imread(alphaPose_resuslt_image_path + fileName)
@@ -1333,8 +1321,8 @@ for path in input_results:
             drawPoseBBox(pose_list, img)
 
             #Pose_L, Pose_R = getFencerPose(pose_list)
-            Pose_idx_L = frame_fencer_list[0][key]
-            Pose_idx_R = frame_fencer_list[1][key]
+            Pose_idx_L = frame_fencer_dict[0][key]
+            Pose_idx_R = frame_fencer_dict[1][key]
 
             if Pose_idx_L != '-1':
                 for pose in pose_list:
