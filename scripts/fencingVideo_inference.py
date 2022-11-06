@@ -182,6 +182,9 @@ if __name__ == "__main__":
         if file[len(file)-4:] == suffix:
             videoFileList.append(file)
 
+
+    videoFileList = fileList
+
     #videoFileList = ["a_vibeSample.mp4","XiaoRuien_YinJulia_20220522.mp4","KetkarKetki_ChinIsabella_20220220.mp4 
     #videoFileList = ["HusisianHadley_ChinIsabella_20220220.avi","HusisianHadley_TemiryaevAnna_20220220.avi"] 
     #"/gdrive/MyDrive/FencingVideoDB/HusisianHadley_TemiryaevAnna_20220220.mp4", 

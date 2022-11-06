@@ -13,6 +13,46 @@ from collections import defaultdict
 import copy
 import collections
 
+# #coco output format
+# Neck_idx        = 1
+# RShoulder_idx   = 2
+# RElbow_idx      = 3
+# RWrist_idx      = 4
+# LShoulder_idx   = 5
+# LElbow_idx      = 6
+# LWrist_idx      = 7
+# RHip_idx        = 8
+# RKnee_idx       = 9
+# RAnkle_idx      = 10 
+# LHip_idx        = 11
+# LKnee_idx       = 12
+# LAnkle_idx      = 13
+
+
+
+# 
+LShoulder_idx   = 5
+RShoulder_idx   = 6
+LElbow_idx      = 7
+RElbow_idx      = 8
+LWrist_idx      = 9
+RWrist_idx      = 10
+LHip_idx        = 11
+RHip_idx        = 12
+LKnee_idx       = 13
+RKnee_idx       = 14
+LAnkle_idx      = 15
+RAnkle_idx      = 16
+
+
+# leftFencer_LElbow = joints_1[7]
+# leftFencer_RElbow = joints_1[8]
+# leftFencer_LWrist = joints_1[9]
+# leftFencer_RWrist = joints_1[10]
+# leftFencer_LShoulder = joints_1[5]
+# leftFencer_RShoulder = joints_1[6]
+
+
 WHITE = (255, 255, 255)
 DEFAULT_FONT = cv2.FONT_HERSHEY_SIMPLEX
 
@@ -37,15 +77,15 @@ def drawPose(json_obj_list, img):
             joints.append(joint)
         #print(f'keypoints:{joints}')
         #cPts = np.array([joints[2], joints[5], joints[12], joints[9],joints[2]])
-        cPts = np.array([joints[5], joints[6], joints[12], joints[11],joints[5]])
-        # maskImage=np.zeros_like(img_gray)
-        # cv2.drawContours(maskImage,[cPts.astype(int)],0,255,-1)
-        # local_mean = cv2.mean(img_gray, mask=maskImage)
-        #print(f'person_id:{person_id}   mean:{mean}    localMean:{local_mean}')
-        #print(f'cPots: {cPts}')
-        #exit()
+        cPts = np.array([joints[RShoulder_idx], joints[RElbow_idx], joints[RWrist_idx]])
+        cv2.polylines(img_out,[cPts.astype(int)],False,(255,0,0), 2)
+        cPts = np.array([joints[LShoulder_idx], joints[LElbow_idx], joints[LWrist_idx]])
+        cv2.polylines(img_out,[cPts.astype(int)],False,(255,0,0), 1)
 
-        cv2.polylines(img_out,[cPts.astype(int)],True,(255,0,0), 2)
+        cPts = np.array([joints[RHip_idx], joints[RKnee_idx], joints[RAnkle_idx]])
+        cv2.polylines(img_out,[cPts.astype(int)],False,(255,255,0), 2)
+        cPts = np.array([joints[LHip_idx], joints[LKnee_idx], joints[LAnkle_idx]])
+        cv2.polylines(img_out,[cPts.astype(int)],False,(255,255,0), 1)
 
 def drawPoseBBox(pose_list, img):
     img_out = img
@@ -86,7 +126,6 @@ def generate_video(image_folder,video_name):
 
     # Array images should only consider
     # the image files ignoring others if any
-
     images.sort()
     #print(f'ImageSize={len(images)}; video_name = {video_name}  images= {images}')
 
@@ -668,6 +707,34 @@ def findCloseKeypoint(json_list_output):
 
   return min_1_id, min_2_id, min_1, min_2, average_1,average_2
 
+def findMinDisKeypoint(json_list_output):
+
+    keypoint1 = json_list_output[0]['keypoints']
+    keypoint2 = json_list_output[1]['keypoints']
+
+    numOfPoint = int(len(keypoint2)/3)
+    joints_1 = []
+    joints_2 = []
+    for i in range(numOfPoint):
+        joint_1 = [keypoint1[i*3],keypoint1[i*3 + 1]]
+        joints_1.append(joint_1)
+        joint_2 = [keypoint2[i*3],keypoint2[i*3 + 1]]
+        joints_2.append(joint_2)
+
+    min_dis = 100000
+    min_idx = [-1,-1]
+    for i in range(numOfPoint):
+        joint1 = joints_1[i]
+        for j in range(numOfPoint):
+            joint2 = joints_2[j]
+            dis = distance (joint1, joint2)
+            if dis < min_dis:
+                min_dis = dis
+                min_idx = [i,j]
+
+    return min_idx, min_dis
+
+
 def kneeDirectionCheck(Knee,Hip,Ankle):
     # point on the line (x,y)
     # (x - Ankle[0])*(y-Hip[1]) = (x-Hip[0])*(y-Ankle[1])
@@ -707,6 +774,19 @@ def elbowDireectionCheck(Knee,Hip,Ankle):
     else:
         result = 'none'
     return result
+
+
+def check_straightness(p1,p2,p3):
+    # A*x + B*y + c = 0
+    A = p1[1] - p3[1]
+    B = p3[0] - p1[0]
+    C = p1[0]*p3[1] - p1[1]*p3[0]
+    D_line = abs( A * p2[0] + B * p2[1] + C)/math.sqrt(A*A+B*B)
+    Dis = distance (p1,p3)
+    R = (Dis - D_line) / Dis
+
+    return R
+
 def getFencerStatus_inPose(pose):
 
     keypoints = pose['keypoints']
@@ -1071,6 +1151,413 @@ def merge_poses(json_obj_final_list):
 
     return pose_list
 
+
+# def get_en_guad_frame_list(fencer_dict):
+
+#     fencer_frame_side_dict = defaultdict()
+#     for key in fencer_dict[0]:
+#         fencer_list = [fencer_dist[0][key], fencer_dist[1][key]]
+#         fencer_frame_side_dict[key] = fencer_list
+
+    # en_guad_period = 0.5 #second
+    # frame_rate = 30
+    # en_guad_frame = en_guad_period * frame_rate
+
+    # left_fencer_arm_straigt = False
+    # right_fencer_arm_straigt = False
+    # left_fencer_hand_out = False
+    # right_fencer_hand_out = False
+    # still_enough = False
+
+    # left_fancer_en_gaud_dist = []
+    # for key, idx in fencer_dist[0].items():
+    #     yy = 0
+
+    # return fencer_frame_side_dict
+
+# # def get_en_guad_frame_list(fencer_dict, frame_dict):
+#     en_guad_frame_dict  = defaultdict()
+#     fencer_frame_side_dict = defaultdict()
+#     for key in fencer_dict[0]:
+#         fencer_list = [fencer_dict[0][key], fencer_dict[1][key]]
+#         leftFencerExit = False
+#         rightFencerExit = False
+#         for pose in frame_dict[key]:
+#             if pose['idx'] == fencer_dict[0][key]:
+#                 fencer_list[0] = pose
+#                 leftFencerExit  = True
+#             if pose['idx'] == fencer_dict[1][key]:
+#                 fencer_list[1] = pose
+#                 rightFencerExit = True
+#         if leftFencerExit and rightFencerExit:
+#             fencer_frame_side_dict[key] = fencer_list
+
+#     en_guad_frame_list = []
+#     for key, list in fencer_frame_side_dict.items():
+
+#         keypoint1 = list[0]['keypoints']
+#         keypoint2 = list[1]['keypoints']
+
+#         numOfPoint = int(len(keypoint2)/3)
+#         joints_1 = []
+#         joints_2 = []
+#         for i in range(numOfPoint):
+#             joint_1 = [keypoint1[i*3],keypoint1[i*3 + 1]]
+#             joints_1.append(joint_1)
+#             joint_2 = [keypoint2[i*3],keypoint2[i*3 + 1]]
+#             joints_2.append(joint_2)
+
+#         # idx_list, minDis = findMinDisKeypoint(list)
+#         # if idx_list[0] == 9 or idx_list[0] == 10:
+#         #     if  idx_list[1] == 9 or idx_list[1] == 10:
+#         #         hand_in_position = True
+#         #     else:
+#         #         hand_in_position = False
+
+#         # check if arm is straight forward
+
+
+#         leftFencer_LElbow = joints_1[7]
+#         leftFencer_RElbow = joints_1[8]
+#         leftFencer_LWrist = joints_1[9]
+#         leftFencer_RWrist = joints_1[10]
+#         leftFencer_LShoulder = joints_1[5]
+#         leftFencer_RShoulder = joints_1[6]
+#         rightFencer_LElbow = joints_2[7]
+#         rightFencer_RElbow = joints_2[8]
+#         rightFencer_LWrist = joints_2[9]       
+#         rightFencer_RWrist = joints_2[10]
+#         rightFencer_LShoulder = joints_2[5]
+#         rightFencer_RShoulder = joints_2[6]
+
+#         #find a shoulder as reference for the other fencer
+#         if keypoint1[ 5*3 + 2] > keypoint1[ 6*3 + 2]: 
+#             leftFencer_Shoulder = joints_2[5]
+#         else:
+#             leftFencer_Shoulder = joints_2[6]
+
+#         if keypoint2[ 5*3 + 2] > keypoint2[ 6*3 + 2]: 
+#             rightFencer_Shoulder = joints_2[5]
+#         else:
+#             rightFencer_Shoulder = joints_2[6]
+
+#        #find the fencing hand, which is closer t            rightFencer_wrist = rightFencer_RWrist
+#             rightFencer_wrist = rightFencer_RWrist
+#             rightFencer_wrist = rightFencer_RWristo the other fencer
+#         if distance(leftFencer_LWrist, rightFencer_Shoulder) > distance(leftFencer_RWrist, rightFencer_Shoulder):
+#             leftFencer_wrist = leftFencer_RWrist
+#             leftFencer_elbow = leftFencer_RElbow
+#             leftFencer_shoulder = leftFencer_RShoulder
+#         else:
+#             leftFencer_wrist = leftFencer_LWrist
+#             leftFencer_elbow = leftFencer_LElbow
+#             leftFencer_shoulder = leftFencer_LShoulder
+
+#         if distance(rightFencer_LWrist, leftFencer_Shoulder) > distance(rightFencer_RWrist, leftFencer_Shoulder):
+#             rightFencer_wrist = rightFencer_RWrist
+#             rightFencer_wrist = rightFencer_RWrist
+#             rightFencer_wrist = rightFencer_RWrist
+#         else:
+#             rightFencer_wrist = rightFencer_LWrist
+
+#         # check_straightness = 1, complete straight, = 0 the base is the same dis as height
+#         # check_straightness can be negtive when the base is very small
+#         L_is_traightness = check_straightness(leftFencer_wrist, leftFencer_elbow, leftFencer_LShoulder)
+#         R_is_traightness = check_straightness(rightFencer_LWrist, rightFencer_LElbow, rightFencer_LShoulder)
+ 
+#         arm_straight = [False, False]
+#         straightness_ratio_threshold = 0.8
+#         if L_L_is_traightness >  straightness_ratio_threshold or L_R_is_traightness > straightness_ratio_threshold:
+#             arm_straight[0] = True        # if arm_straight == True and hand_in_position == True:
+#         #     en_guad_frame_list.append(True)
+#         # else:
+#         #     if len(en_guad_frame_list) > 15:
+#         #         en_guad_frame_dict[key] = lisarm_straightt
+#         #     en_guad_frame_list = []
+#         if R_L_is_traightness < straightness_ratio_threshold or R_R_is_traightness < straightness_ratio_threshold:
+#             arm_straight[1] = True
+
+#         # if arm_straight == True and hand_in_position == True:
+#         #     en_guad_frame_list.append(True)
+#         # else:en_guad_frame_dict
+#         #     if len(en_guad_frame_list) def get_en_guad_frame_list(fencer_dict, frame_dict):
+#     en_guad_frame_dict  = defaultdict()
+#     fencer_frame_side_dict = defaultdict()
+#     for key in fencer_dict[0]:
+#         fencer_list = [fencer_dict[0][key], fencer_dict[1][key]]
+#         leftFencerExit = False
+#         rightFencerExit = False
+#         for pose in frame_dict[key]:
+#             if pose['idx'] == fencer_dict[0][key]:
+#                 fencer_list[0] = pose
+#                 leftFencerExit  = True
+#             if pose['idx'] == fencer_dict[1][key]:
+#                 fencer_list[1] = pose
+#                 rightFencerExit = True
+#         if leftFencerExit and rightFencerExit:
+#             fencer_frame_side_dict[key] = fencer_list
+
+#     en_guad_frame_list = []
+#     for key, list in fencer_frame_side_dict.items():
+
+#         keypoint1 = list[0]['keypoints']
+#         keypoint2 = list[1]['keypoints']
+
+#         numOfPoint = int(len(keypoint2)/3)
+#         joints_1 = []
+#         joints_2 = []
+#         for i in range(numOfPoint):
+#             joint_1 = [keypoint1[i*3],keypoint1[i*3 + 1]]
+#             joints_1.append(joint_1)
+#             joint_2 = [keypoint2[i*3],keypoint2[i*3 + 1]]
+#             joints_2.append(joint_2)
+
+#         # idx_list, minDis = findMinDisKeypoint(list)
+#         # if idx_list[0] == 9 or idx_list[0] == 10:
+#         #     if  idx_list[1] == 9 or idx_list[1] == 10:
+#         #         hand_in_position = True
+#         #     else:
+#         #         hand_in_position = False
+
+#         # check if arm is straight forward
+
+
+#         leftFencer_LElbow = joints_1[7]
+#         leftFencer_RElbow = joints_1[8]
+#         leftFencer_LWrist = joints_1[9]
+#         leftFencer_RWrist = joints_1[10]
+#         leftFencer_LShoulder = joints_1[5]
+#         leftFencer_RShoulder = joints_1[6]
+#         rightFencer_LElbow = joints_2[7]
+#         rightFencer_RElbow = joints_2[8]
+#         rightFencer_LWrist = joints_2[9]       
+#         rightFencer_RWrist = joints_2[10]
+#         rightFencer_LShoulder = joints_2[5]
+#         rightFencer_RShoulder = joints_2[6]
+
+#         #find a shoulder as reference for the other fencer
+#         if keypoint1[ 5*3 + 2] > keypoint1[ 6*3 + 2]: 
+#             leftFencer_Shoulder = joints_2[5]
+#         else:
+#             leftFencer_Shoulder = joints_2[6]
+
+#         if keypoint2[ 5*3 + 2] > keypoint2[ 6*3 + 2]: 
+#             rightFencer_Shoulder = joints_2[5]
+#         else:
+#             rightFencer_Shoulder = joints_2[6]
+
+#        #find the fencing hand, which is closer t            rightFencer_wrist = rightFencer_RWrist
+#             rightFencer_wrist = rightFencer_RWrist
+#             rightFencer_wrist = rightFencer_RWristo the other fencer
+#         if distance(leftFencer_LWrist, rightFencer_Shoulder) > distance(leftFencer_RWrist, rightFencer_Shoulder):
+#             leftFencer_wrist = leftFencer_RWrist
+#             leftFencer_elbow = leftFencer_RElbow
+#             leftFencer_shoulder = leftFencer_RShoulder
+#         else:
+#             leftFencer_wrist = leftFencer_LWrist
+#             leftFencer_elbow = leftFencer_LElbow
+#             leftFencer_shoulder = leftFencer_LShoulder
+
+#         if distance(rightFencer_LWrist, leftFencer_Shoulder) > distance(rightFencer_RWrist, leftFencer_Shoulder):
+#             rightFencer_wrist = rightFencer_RWrist
+#             rightFencer_wrist = rightFencer_RWrist
+#             rightFencer_wrist = rightFencer_RWrist
+#         else:
+#             rightFencer_wrist = rightFencer_LWrist
+
+#         # check_straightness = 1, complete straight, = 0 the base is the same dis as height
+#         # check_straightness can be negtive when the base is very small
+#         L_is_traightness = check_straightness(leftFencer_wrist, leftFencer_elbow, leftFencer_LShoulder)
+#         R_is_traightness = check_straightness(rightFencer_LWrist, rightFencer_LElbow, rightFencer_LShoulder)
+ 
+#         arm_straight = [False, False]
+#         straightness_ratio_threshold = 0.8
+#         if L_L_is_traightness >  straightness_ratio_threshold or L_R_is_traightness > straightness_ratio_threshold:
+#             arm_straight[0] = True        # if arm_straight == True and hand_in_position == True:
+#         #     en_guad_frame_list.append(True)
+#         # else:
+#         #     if len(en_guad_frame_list) > 15:
+#         #         en_guad_frame_dict[key] = lisarm_straightt
+#         #     en_guad_frame_list = []
+#         if R_L_is_traightness < straightness_ratio_threshold or R_R_is_traightness < straightness_ratio_threshold:
+#             arm_straight[1] = True
+
+#         # if arm_straight == True and hand_in_position == True:
+#         #     en_guad_frame_list.append(True)
+#         # else:
+#         #     if len(en_guad_frame_list) > 15:
+#         #         en_guad_frame_dict[key] = lisarm_straightt
+#         #     en_guad_frame_list = []
+#         #fencer_frame_side_dict[key] = fencer_list
+#     return en_guad_frame_dict> 15:
+#         #         en_guad_frame_dict[key] = lisarm_straightt
+#         #     en_guad_frame_list = []
+#         #fencer_frame_side_dict[key] = fencer_list
+#     return en_guad_frame_dict
+
+def get_feet_dis_dict(fencer_dict, frame_dict):
+    feet_dis_dict = defaultdict()
+    fencer_frame_side_dict = defaultdict()
+    for key in fencer_dict[0]:
+        fencer_list = [fencer_dict[0][key], fencer_dict[1][key]]
+        leftFencerExit = False
+        rightFencerExit = False
+        for pose in frame_dict[key]:
+            if pose['idx'] == fencer_dict[0][key]:
+                fencer_list[0] = pose
+                leftFencerExit  = True
+            if pose['idx'] == fencer_dict[1][key]:
+                fencer_list[1] = pose
+                rightFencerExit = True
+        if leftFencerExit and rightFencerExit:
+            fencer_frame_side_dict[key] = fencer_list
+
+    for key, list in fencer_frame_side_dict.items():
+
+        keypoint1 = list[0]['keypoints']
+        keypoint2 = list[1]['keypoints']
+
+        numOfPoint = int(len(keypoint2)/3)
+        joints_1 = []
+        joints_2 = []
+        for i in range(numOfPoint):
+            joint_1 = [keypoint1[i*3],keypoint1[i*3 + 1]]
+            joints_1.append(joint_1)
+            joint_2 = [keypoint2[i*3],keypoint2[i*3 + 1]]
+            joints_2.append(joint_2)
+
+        leftFencer_LHip = joints_1[LHip_idx]
+        leftFencer_RHip = joints_1[RHip_idx]
+        leftFencer_LKnee = joints_1[LKnee_idx]
+        leftFencer_RKnee = joints_1[RKnee_idx]
+        leftFencer_LAnkle = joints_1[LAnkle_idx]
+        leftFencer_RAnkle = joints_1[RAnkle_idx]
+        rightFencer_LHip = joints_2[LHip_idx]
+        rightFencer_RHip = joints_2[RHip_idx]
+        rightFencer_LKnee = joints_2[LKnee_idx]
+        rightFencer_RKnee = joints_2[RKnee_idx]
+        rightFencer_LAnkle = joints_2[LAnkle_idx]
+        rightFencer_RAnkle = joints_2[RAnkle_idx]
+
+        leftFencer_dis = distance(leftFencer_LAnkle,leftFencer_RAnkle)
+        rightFencer_dis = distance(rightFencer_LAnkle,rightFencer_RAnkle)
+        disRR = distance(rightFencer_RAnkle,leftFencer_RAnkle)
+        disRL = distance(rightFencer_RAnkle,leftFencer_LAnkle)
+        disLR = distance(rightFencer_LAnkle,leftFencer_RAnkle)
+        disLL = distance(rightFencer_LAnkle,leftFencer_LAnkle)
+        inBetween_dis = min(disRR,disRL, disLR, disLL)
+        feet_dis_dict[key] = [leftFencer_dis,rightFencer_dis,inBetween_dis]
+
+    return feet_dis_dict
+
+
+def get_fencer_posture(fencer_dict, frame_dict):
+    hand_straightness_dict = get_handstraightness_dict(fencer_dict, frame_dict)
+    feet_distance_dict = get_feet_dis_dict(fencer_dict, frame_dict)
+    return hand_straightness_dict, feet_distance_dict
+
+def get_handstraightness_dict(fencer_dict, frame_dict):
+    hand_straightness_dict  = defaultdict()
+    fencer_frame_side_dict = defaultdict()
+    for key in fencer_dict[0]:
+        fencer_list = [fencer_dict[0][key], fencer_dict[1][key]]
+        leftFencerExit = False
+        rightFencerExit = False
+        for pose in frame_dict[key]:
+            if pose['idx'] == fencer_dict[0][key]:
+                fencer_list[0] = pose
+                leftFencerExit  = True
+            if pose['idx'] == fencer_dict[1][key]:
+                fencer_list[1] = pose
+                rightFencerExit = True
+        if leftFencerExit and rightFencerExit:
+            fencer_frame_side_dict[key] = fencer_list
+
+    for key, list in fencer_frame_side_dict.items():
+
+        if key == 190:
+            tt = 0
+        keypoint1 = list[0]['keypoints']
+        keypoint2 = list[1]['keypoints']
+
+        numOfPoint = int(len(keypoint2)/3)
+        joints_1 = []
+        joints_2 = []
+        for i in range(numOfPoint):
+            joint_1 = [keypoint1[i*3],keypoint1[i*3 + 1]]
+            joints_1.append(joint_1)
+            joint_2 = [keypoint2[i*3],keypoint2[i*3 + 1]]
+            joints_2.append(joint_2)
+
+        leftFencer_LElbow = joints_1[LElbow_idx]
+        leftFencer_RElbow = joints_1[RElbow_idx]
+        leftFencer_LWrist = joints_1[LWrist_idx]
+        leftFencer_RWrist = joints_1[RWrist_idx]
+        leftFencer_LShoulder = joints_1[LShoulder_idx]
+        leftFencer_RShoulder = joints_1[RShoulder_idx]
+        rightFencer_LElbow = joints_2[LElbow_idx]
+        rightFencer_RElbow = joints_2[RElbow_idx]
+        rightFencer_LWrist = joints_2[LWrist_idx]
+        rightFencer_RWrist = joints_2[RWrist_idx]
+        rightFencer_LShoulder = joints_2[LShoulder_idx]
+        rightFencer_RShoulder = joints_2[RShoulder_idx]
+
+        #find a shoulder as reference for the other fencer
+        if keypoint1[ LShoulder_idx*3 + 2] > keypoint1[ RShoulder_idx*3 + 2]: 
+            leftFencer_Shoulder = joints_1[LShoulder_idx]
+        else:
+            leftFencer_Shoulder = joints_1[RShoulder_idx]
+
+        if keypoint2[ LShoulder_idx*3 + 2] > keypoint2[ RShoulder_idx*3 + 2]: 
+            rightFencer_Shoulder = joints_2[LShoulder_idx]
+        else:
+            rightFencer_Shoulder = joints_2[RShoulder_idx]
+
+       #find the         
+        dis_rightHand = distance(rightFencer_RWrist, leftFencer_Shoulder)
+        dis_leftHand = distance(rightFencer_LWrist, leftFencer_Shoulder)
+        if dis_rightHand < dis_leftHand:
+            rightFencer_wrist = rightFencer_RWrist
+            rightFencer_elbow = rightFencer_RElbow
+            rightFencer_shoulder = rightFencer_RShoulder
+        else:
+            rightFencer_wrist = rightFencer_LWrist
+            rightFencer_elbow = rightFencer_LElbow
+            rightFencer_shoulder = rightFencer_LShoulder
+            
+
+        dis_rightHand = distance(leftFencer_RWrist, rightFencer_Shoulder)
+        dis_leftHand = distance(leftFencer_LWrist, rightFencer_Shoulder)
+        if dis_rightHand < dis_leftHand:
+            leftFencer_wrist = leftFencer_RWrist
+            leftFencer_elbow = leftFencer_RElbow
+            leftFencer_shoulder = leftFencer_RShoulder
+        else:
+            leftFencer_wrist = leftFencer_LWrist
+            leftFencer_elbow = leftFencer_LElbow
+            leftFencer_shoulder = leftFencer_LShoulder
+
+        dis_rightHand = distance(rightFencer_RWrist, leftFencer_Shoulder)
+        dis_leftHand = distance(rightFencer_LWrist, leftFencer_Shoulder)
+        if dis_rightHand < dis_leftHand:
+            rightFencer_wrist = rightFencer_RWrist
+            rightFencer_elbow = rightFencer_RElbow
+            rightFencer_shoulder = rightFencer_RShoulder
+        else:
+            rightFencer_wrist = rightFencer_LWrist
+            rightFencer_elbow = rightFencer_LElbow
+            rightFencer_shoulder = rightFencer_LShoulder
+
+
+        # check_straightness = 1, complete straight, = 0 the base is the same dis as height
+        # check_straightness can be negtive when the base is very small
+        L_traightness = check_straightness(leftFencer_wrist, leftFencer_elbow, leftFencer_shoulder)
+        R_traightness = check_straightness(rightFencer_wrist, rightFencer_elbow, rightFencer_shoulder)
+        hand_straightness_dict[key] = [L_traightness, R_traightness]
+
+
+    return hand_straightness_dict
+
 alphaPose_resuslt_path = '/home/yin/gitSources/AlphaPose/testResults/'
 
 input_results = os.listdir(alphaPose_resuslt_path)
@@ -1194,7 +1681,10 @@ for path in input_results:
 
                 overlap_list = get_Overlap_list(out_list_b)
                 # 2 poses (with different idx) are overlapped in a frame
+              # # if Pose_R != []:
+                # #     right_idx = Pose_R['idx']
 
+                # # frame_fencer_list.append([left_idx,right_idx])
                 if len(overlap_list) > 0:
                     out_list_b, overlap_list = remove_overlap_by_size(out_list_b, overlap_list,3)
 
@@ -1207,48 +1697,7 @@ for path in input_results:
                 #Pose_L, Pose_R, img= getFencerPose(out_list_b,img)
 
                 #img_out = drawPose(out_list_b, img)
-                json_obj_final_list = json_obj_final_list + out_list_b
-                # outF = f'{fencer_image_dir}/img_{str(frame_no).zfill(padSize)}.jpg'
-                # cv2.imwrite(outF, img_out)
-
-                # # frame_list = []
-                # # for pose in out_list_b:                # # frame_list = []
-                # # for pose in out_list_b:
-                # #  #   frame_list.append(int(pose['idx']))
-                # #     frame_list.append(pose)
-
-
-                    
-                # # frame_id = obj_prev["image_id"]
-                # # frame_dict[frame_no] = frame_list
-
-                # # Pose_L, Pose_R = getFencerPose(frame_list)
-                # # #Pose_L, Pose_R, img = getFencerPose(frame_list, img)
-
-                # # left_idx = -1
-                # # right_idx = -1
-                # # if Pose_L != []:
-                # #     left_idx = Pose_L['idx']
-                # # if Pose_R != []:
-                # #     right_idx = Pose_R['idx']
-
-                # # frame_fencer_list.append([left_idx,right_idx])
-                # #  #   frame_list.append(int(pose['idx']))
-                # #     frame_list.append(pose)
-
-
-                    
-                # # frame_id = obj_prev["image_id"]
-                # # frame_dict[frame_no] = frame_list
-
-                # # Pose_L, Pose_R = getFencerPose(frame_list)
-                # # #Pose_L, Pose_R, img = getFencerPose(frame_list, img)
-
-                # # left_idx = -1
-                # # right_idx = -1
-                # # if Pose_L != []:
-                # #     left_idx = Pose_L['idx']
-                # # if Pose_R != []:
+                json_obj_final_list = json_obj_final_list + out_list_b              # # if Pose_R != []:
                 # #     right_idx = Pose_R['idx']
 
                 # # frame_fencer_list.append([left_idx,right_idx])
@@ -1267,6 +1716,7 @@ for path in input_results:
         json_obj = filtered_pose_list[0]
         frame_pose_list.append(json_obj)
         obj_prev = json_obj
+
         for i in range(1, list_size): 
             json_obj = filtered_pose_list[i]
             if json_obj['image_id'] == obj_prev['image_id'] and i != list_size - 1:
@@ -1308,17 +1758,32 @@ for path in input_results:
 #        print(frame_dict[365])
         frame_fencer_dict = remove_overlap_fencers(frame_fencer_dict,frame_dict)
 
+        #en_guad_dict = get_en_guad_frame_list(frame_fencer_dict, frame_dict)
+        # fencer_body_posture [left_fencer, right_fencer, distance_in_between]
+        # left_fencer = [hand_straightness, feet_distance, forward_leg_straightness, backward_leg_staightness, truck_tilt, truck_speed]
+
+        hand_straight, feet_dis = get_fencer_posture(frame_fencer_dict,frame_dict)
+        # hand_straight = get_hand_straightness_dict(frame_fencer_dict, frame_dict)
+        # feet_dis = get_feet_dis_dict(frame_fencer_dict, frame_dict)
         # draw fencer label
         for key, pose_list in frame_dict.items():
         #for key in range(len(frame_dict)):
         #    pose_list = frame_dict[key] 
             #frame_pose = frame_dict[frame]
-            fileName = str(key)+".jpg" #obj_prev['image_id'] #.replace(".jpg","")+"_orig.jpg"
+            fileName = str(key)+".jpg" #obj_prev['iget_feet_dis_dictmage_id'] #.replace(".jpg","")+"_orig.jpg"
             img = cv2.imread(alphaPose_resuslt_image_path + fileName)
             cv2.putText(img, str(key), (50,50), cv2.FONT_HERSHEY_SIMPLEX,
                         1, (0,0,255), 2, cv2.LINE_AA)
+            if key == 190:
+                tt = 0
+            if key in hand_straight:
+                for straightness in hand_straight[key]:
+                    if straightness > 0.9:
+                        cv2.putText(img, "straight Arm", (590,200), cv2.FONT_HERSHEY_SIMPLEX,
+                        5, (0,0,255), 5, cv2.LINE_AA)
 
             drawPoseBBox(pose_list, img)
+            drawPose(pose_list, img)
 
             #Pose_L, Pose_R = getFencerPose(pose_list)
             Pose_idx_L = frame_fencer_dict[0][key]
