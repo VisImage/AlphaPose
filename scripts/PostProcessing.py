@@ -1558,7 +1558,7 @@ def get_handstraightness_dict(fencer_dict, frame_dict):
 
     return hand_straightness_dict
 
-alphaPose_resuslt_path = '/home/yin/gitSources/AlphaPose/testResults/'
+alphaPose_resuslt_path = 'testResults/'
 
 input_results = os.listdir(alphaPose_resuslt_path)
 image_status = {}
