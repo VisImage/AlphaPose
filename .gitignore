@@ -101,7 +101,7 @@ venv.bak/
 
 # mypy
 .mypy_cache/
-.vscode
+# .vscode to archieve launch.json
 .tensorboard
 exp/coco*
 *.pth
