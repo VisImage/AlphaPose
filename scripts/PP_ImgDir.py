@@ -13,6 +13,8 @@ from collections import defaultdict
 import copy
 import collections
 
+from pose_precision_json import convert_a_file
+
 # #coco output format
 # Neck_idx        = 1
 # RShoulder_idx   = 2
@@ -1559,7 +1561,7 @@ def get_handstraightness_dict(fencer_dict, frame_dict):
 
 def detect_fencers(result):
     alphaPose_resuslt_image_path = result + "vis_orig/"
-    alphaPose_resuslt_json_name = result + "precision_results.json"
+    alphaPose_resuslt_json_name = result + "precision-results.json"
     vis_ok = os.path.isdir(alphaPose_resuslt_image_path)
     json_ok = os.path.isfile(alphaPose_resuslt_json_name)
 
@@ -1802,6 +1804,10 @@ def detect_fencers(result):
 
 
 if __name__ == "__main__":
-    alphaPose_resuslt_path = 'examples/res/'
-    result = alphaPose_resuslt_path
+
+    alphaPose_result_path = 'examples/res/'
+    result = alphaPose_result_path
+    alphaPose_result_json_name = result + "alphapose-results.json"
+    precision_result_json_name = result + "precision-results.json"
+    convert_a_file(alphaPose_result_json_name,precision_result_json_name)
     detect_fencers(result)

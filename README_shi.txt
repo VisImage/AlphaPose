@@ -51,9 +51,8 @@ The optical flow is calculated inside PostProcessing.py using cpu (opencv) effor
 #
 
 (alphapose) cd AlphaPose
-(alphapose) yin@yin-Dell: VisImage/AlphaPose$ python scripts/demo_inference.py --cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --checkpoint pretrained_models/fast_res50_256x192.pth --indir,examples/fencing_images/, --outdir, examples/res, --save_img --pose_track
+(alphapose) yin@yin-Dell: VisImage/AlphaPose$ python scripts/demo_inference.py --cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --checkpoint pretrained_models/fast_res50_256x192.pth --indir examples/fencing_images/ --outdir examples/res --save_img --pose_track
         // or to use .vscode/launch.json from MS code
-(alphapose) yin@yin-Dell: VisImage/AlphaPose$ python scripts/pose_precision_json.py  --inDir examples/res
-        // alphapose-results.json is compressed and the smaller file is precesion_results.json
 (alphapose) yin@yin-Dell: VisImage/AlphaPose$ python scripts/PP_ImgDir.py
         // 2 fencers, fencing on the strip, are detected from the images in the folder examples/res. the fencer imgage are in fencer_image_dir, the pose is stored in  filtered.json
+        // precision adjustment is integrated inside PP_ImgDir.py

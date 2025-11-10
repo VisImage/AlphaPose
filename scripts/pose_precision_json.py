@@ -265,18 +265,6 @@ if __name__ == "__main__":
         #     #out_string = out_string + "," + out_string2
         #     out_strings.append(","+word_new)
             
-
-#    print(result)
-# if True: #os.path.isdir(result) :
-def detect_fencers(result):
-    alphaPose_resuslt_image_path = result + "vis_orig/"
-    alphaPose_resuslt_json_name = result + "precision_results.json"
-    vis_ok = os.path.isdir(alphaPose_resuslt_image_path)
-    json_ok = os.path.isfile(alphaPose_resuslt_json_
-        # out_string = ''.join(out_strings)
-        # with open(out_file,"w") as f:
-        #     f.write(out_string)
-            
         print("converted file is written to", out_file)
 
 
