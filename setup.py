@@ -175,11 +175,11 @@ def get_install_requires():
 
 
 def is_installed(package_name):
-    from pip._internal.utils.misc import get_installed_distributions
-    for p in get_installed_distributions():
-        if package_name in p.egg_name():
-            return True
-    return False
+    import importlib.util
+    try:
+        return importlib.util.find_spec(package_name) is not None
+    except Exception:
+        return False
 
 
 if __name__ == '__main__':
@@ -217,7 +217,7 @@ if __name__ == '__main__':
         print("\nInstall third-party pycocotools for Windows...")
         cmd = 'python -m pip install git+https://github.com/philferriere/cocoapi.git#subdirectory=PythonAPI'
         os.system(cmd)
-    # if not is_installed('cython_bbox'):
-    #     print("\nInstall `cython_bbox`...")
-    #     cmd = 'python -m pip install git+https://github.com/yanfengliu/cython_bbox.git'
-    #     os.system(cmd)
+    if not is_installed('cython_bbox'):
+        print("\nInstall `cython_bbox`...")
+        cmd = 'python -m pip install git+https://github.com/yanfengliu/cython_bbox.git'
+        os.system(cmd)

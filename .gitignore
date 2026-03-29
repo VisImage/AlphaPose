@@ -122,3 +122,14 @@ data
 #user data
 testVideos/
 testResults*/
+
+# Fencing post-processing & personal files
+README_shi.txt
+dev_notes*.txt
+fencer_image_dir/
+fencingImgDir/
+examples/fencing_images/
+examples/fencingDirRes/
+precision_results.json
+alphapose-results.json
+filtered.json

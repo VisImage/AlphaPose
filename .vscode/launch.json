@@ -19,12 +19,11 @@
             //"args":["--inDir", "examples/res"]       
 
             // for demo_inference.py an image folder
-            // "args":["--cfg", "configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml","--checkpoint","pretrained_models/fast_res50_256x192.pth","--indir","examples/fencing_images/", "--outdir", "examples/res", "--save_img","--pose_track"] 
+            "args":["--cfg", "configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml","--checkpoint","pretrained_models/fast_res50_256x192.pth","--indir","examples/fencingImgDir/", "--outdir", "examples/fencingDirRes", "--save_img","--pose_track"] 
             // for demo_inference.py an image
-            //"args":["--cfg", "configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml","--checkpoint","pretrained_models/fast_res50_256x192.pth","--image","examples/demo/1.jpg", "--outdir", "examples/res/test_yin", "--save_img", "--sp"]       
+            //"args":["--cfg", "configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml","--checkpoint","pretrained_models/fast_res50_256x192.pth","--image","examples/demo/1.jpg", "--outdir", "examples/res/test_user", "--save_img", "--sp"]       
             // for demo_inference.py for a video
             //"args":["--cfg", "configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml","--checkpoint","pretrained_models/fast_res50_256x192.pth","--sp", "--video","examples/fencing3.avi", "--outdir", "examples/video_res", "--save_video"]       
         }
-        python scripts/demo_inference.py --cfg ${cfg_file} --checkpoint ${trained_model} --indir ${img_directory} --outdir ${output_directory}
     ]
 }

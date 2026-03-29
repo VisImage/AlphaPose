@@ -4,6 +4,13 @@
 </div>
 
 
+## 🤺 Fencing Post-Processing & Tracking
+
+**Welcome to the Fencing fork of AlphaPose!** 
+If you are looking for the custom scripts designed to track and extract the poses of two fencers in video or image sequences, please refer to the **[Fencing README (FENCING_README.md)](FENCING_README.md)** for specialized installation and usage instructions.
+
+---
+
 ## News!
 - Sep 2022: [**Jittor** version](https://github.com/tycoer/AlphaPose_jittor) of AlphaPose is released! It achieves 1.45x speed up with resnet50 backbone on the training stage.
 - July 2022: [**v0.6.0** version](https://github.com/MVIG-SJTU/AlphaPose) of AlphaPose is released! [HybrIK](https://github.com/Jeff-sjtu/HybrIK) for 3D pose and shape estimation is supported!

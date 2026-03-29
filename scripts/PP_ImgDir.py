@@ -1761,7 +1761,8 @@ def detect_fencers(result):
     #for key in range(len(frame_dict)):
     #    pose_list = frame_dict[key] 
         #frame_pose = frame_dict[frame]
-        fileName = str(key)+".jpg" #obj_prev['iget_feet_dis_dictmage_id'] #.replace(".jpg","")+"_orig.jpg"
+        # fileName = str(key)+".jpg" #obj_prev['iget_feet_dis_dictmage_id'] #.replace(".jpg","")+"_orig.jpg"
+        fileName = frame_dict[key][0]["image_id"] #obj_prev['iget_feet_dis_dictmage_id'] #.replace(".jpg","")+"_orig.jpg"
         img = cv2.imread(alphaPose_resuslt_image_path + fileName)
         cv2.putText(img, str(key), (50,50), cv2.FONT_HERSHEY_SIMPLEX,
                     1, (0,0,255), 2, cv2.LINE_AA)
@@ -1805,7 +1806,7 @@ def detect_fencers(result):
 
 if __name__ == "__main__":
 
-    alphaPose_result_path = 'examples/res/'
+    alphaPose_result_path = 'examples/fencingDirRes/'
     result = alphaPose_result_path
     alphaPose_result_json_name = result + "alphapose-results.json"
     precision_result_json_name = result + "precision-results.json"
